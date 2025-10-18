@@ -18,7 +18,8 @@ def startup():
 @app.post("/scan")
 async def start_scan(req: ScanRequest, background_tasks: BackgroundTasks):
     # enqueue background scan
-    background_tasks.add_task(run_simple_scan, req.target, )
+    quick = True if req.mode == "quick" else False
+    background_tasks.add_task(run_simple_scan, req.target, None, quick)
     return {"status": "started", "target": req.target, "mode": req.mode}
 
 @app.get("/findings")

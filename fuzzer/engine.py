@@ -28,10 +28,16 @@ def mutate_value(value):
         return value * random.choice([0, -1, 2**12])
     return value
 
-async def probe(client: httpx.AsyncClient, method: str, url: str, json_body: Optional[Dict[str,Any]]):
+async def probe(client: httpx.AsyncClient, method: str, url: str, json_body: Optional[Dict[str,Any]], files: Optional[Dict[str,Any]] = None):
     t0 = time.perf_counter()
     try:
-        r = await client.request(method, url, json=json_body, headers=random.choice(HEADERS), timeout=8.0)
+        # choose json or files depending on what's provided (multipart support)
+        kwargs = {"headers": random.choice(HEADERS), "timeout": 8.0}
+        if files is not None:
+            kwargs["files"] = files
+        else:
+            kwargs["json"] = json_body
+        r = await client.request(method, url, **kwargs)
         dt = int((time.perf_counter() - t0) * 1000)
         snippet = (r.text or "")[:500]
         return {"status": r.status_code, "ms": dt, "len": len(r.content), "snippet": snippet, "text": r.text}
@@ -59,9 +65,16 @@ async def run_simple_scan(target_base: str, save_callback=save_finding, quick=Tr
             for _ in range(attempts):
                 if body:
                     mutated = {k: mutate_value(v) for k,v in body.items()}
+                    # JSON request
+                    tasks.append(asyncio.create_task(probe(client, method, url, mutated, None)))
                 else:
                     mutated = None
-                tasks.append(asyncio.create_task(probe(client, method, url, mutated)))
+                    # special-case the upload endpoint: send a small multipart file
+                    if url.endswith('/upload') and method.upper() == 'POST':
+                        files = {"file": ("fuzz.txt", b"fuzz")}
+                        tasks.append(asyncio.create_task(probe(client, method, url, None, files)))
+                    else:
+                        tasks.append(asyncio.create_task(probe(client, method, url, None, None)))
         results = await asyncio.gather(*tasks)
         # save suspicious results
         idx = 0
