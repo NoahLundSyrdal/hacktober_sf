@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+How to run the app: uvicorn app:app --reload
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/6670d760-711b-48c6-b181-42aff79357ee
