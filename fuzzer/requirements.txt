@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+httpx[http2]
+pydantic
+sqlite3  # built-in, no pip install needed
+rich
