@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VibeFuzz - Findings Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 20px; background:#f7f7fb }
+    h1 { margin-bottom: 8px }
+    table { border-collapse: collapse; width: 100%; background: #fff }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left }
+    th { background:#fafafa; font-weight:600 }
+    .small { font-size: 0.9em; color: #666 }
+    pre { white-space: pre-wrap; max-height: 160px; overflow: auto; background:#f4f6fb; padding:8px }
+    .controls { margin-bottom: 12px }
+  </style>
+</head>
+<body>
+  <h1>VibeFuzz — Findings</h1>
+  <div class="controls">
+    <label>Auto-refresh: <input id="auto" type="checkbox" checked></label>
+    <label style="margin-left:12px">Refresh interval (s): <input id="interval" type="number" value="5" min="1" style="width:60px"></label>
+    <label style="margin-left:12px">Show status 0: <input id="show0" type="checkbox"></label>
+    <button id="refresh" style="margin-left:12px">Refresh now</button>
+  </div>
+
+  <table id="tbl">
+    <thead>
+      <tr><th>ID</th><th>Endpoint</th><th>Method</th><th>Status</th><th>Latency (ms)</th><th>Snippet / Payload</th><th class="small">Created</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const tbody = document.querySelector('#tbl tbody');
+    const auto = document.getElementById('auto');
+    const intervalEl = document.getElementById('interval');
+    const refreshBtn = document.getElementById('refresh');
+
+    async function load() {
+      try {
+        const res = await fetch('/findings');
+        const data = await res.json();
+        // optionally filter out noisy client-side errors (status === 0)
+        const show0 = document.getElementById('show0').checked;
+        const filtered = data.filter(f => show0 || f.status !== 0);
+        tbody.innerHTML = '';
+        filtered.forEach(f => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${f.id}</td>
+            <td>${escapeHtml(f.endpoint)}</td>
+            <td>${escapeHtml(f.method)}</td>
+            <td>${f.status}</td>
+            <td>${f.latency_ms}</td>
+            <td><pre>${escapeHtml(f.snippet)}\n\n${escapeHtml(f.payload)}</pre></td>
+            <td class="small">${escapeHtml(f.created_at)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7">Error loading findings: ' + escapeHtml(String(e)) + '</td></tr>';
+      }
+    }
+
+    function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+    refreshBtn.addEventListener('click', load);
+
+    let timer = null;
+    function schedule(){
+      if(timer) clearInterval(timer);
+      if(auto.checked){
+        const sec = Math.max(1, parseInt(intervalEl.value || 5));
+        timer = setInterval(load, sec*1000);
+      }
+    }
+
+    auto.addEventListener('change', schedule);
+    intervalEl.addEventListener('change', schedule);
+
+    // initial
+    load(); schedule();
+  </script>
+</body>
+</html>

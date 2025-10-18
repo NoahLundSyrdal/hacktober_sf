@@ -82,7 +82,9 @@ async def run_simple_scan(target_base: str, save_callback=save_finding, quick=Tr
             attempts = 3 if quick else 8
             for _ in range(attempts):
                 res = results[idx]; idx += 1
-                if res["status"] >= 500 or res["status"] == 0 or (res["ms"] is not None and res["ms"] > 1000):
+                # Save only server-side errors (5xx) or responses that are very slow.
+                # Do NOT save client-side probe exceptions (status == 0) to reduce noise.
+                if res["status"] >= 500 or (res["ms"] is not None and res["ms"] > 1000):
                     payload = {"mutated": True}
                     # optional: attach request details for reproduction
                     save_callback(target_base, url, method, res["status"], res["ms"] or -1, res["snippet"], payload)

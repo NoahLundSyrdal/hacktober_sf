@@ -1,11 +1,21 @@
 # fuzzer/main.py
 from fastapi import FastAPI, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from .engine import run_simple_scan
 from .store import init_db, list_findings
 import uvicorn
 
 app = FastAPI(title="VibeFuzz Controller")
+
+# serve a tiny dashboard UI
+app.mount("/static", StaticFiles(directory="./fuzzer/static"), name="static")
+
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse("./fuzzer/static/dashboard.html")
 
 class ScanRequest(BaseModel):
     target: str
