@@ -129,6 +129,51 @@ async def submit_result(result: FuzzResult):
 async def get_latest_results():
     return RESULTS[-10:]
 
+@app.get("/api/schema")
+async def get_api_schema():
+    """
+    Returns a structured catalog of all available API endpoints.
+    Uses FastAPI's built-in OpenAPI schema for discovery.
+    """
+    openapi_schema = app.openapi()
+    
+    endpoints = []
+    for path, path_data in openapi_schema.get("paths", {}).items():
+        for method, operation in path_data.items():
+            endpoint_info = {
+                "path": path,
+                "method": method.upper(),
+                "summary": operation.get("summary", ""),
+                "parameters": [],
+                "request_body": None,
+                "responses": operation.get("responses", {})
+            }
+            
+            # Extract path and query parameters
+            if "parameters" in operation:
+                for param in operation["parameters"]:
+                    endpoint_info["parameters"].append({
+                        "name": param.get("name"),
+                        "type": param.get("schema", {}).get("type", "string"),
+                        "location": param.get("in"),
+                        "required": param.get("required", False)
+                    })
+            
+            # Extract request body schema
+            if "requestBody" in operation:
+                content = operation["requestBody"].get("content", {})
+                if "application/json" in content:
+                    schema_ref = content["application/json"].get("schema", {})
+                    endpoint_info["request_body"] = schema_ref
+            
+            endpoints.append(endpoint_info)
+    
+    return {
+        "api_title": openapi_schema.get("info", {}).get("title", "API"),
+        "total_endpoints": len(endpoints),
+        "endpoints": endpoints
+    }
+
 
 @app.get("/healthz")
 async def health_check():
