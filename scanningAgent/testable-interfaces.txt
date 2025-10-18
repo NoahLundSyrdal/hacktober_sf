@@ -1,0 +1,27 @@
+The API interfaces offered by this app and their inputs are:
+
+1. /notes (POST)
+   - Inputs: NoteCreate model
+   - Fields: title (str), body (str), mood (int)
+
+2. /notes/{note_id} (GET)
+   - Inputs: note_id (str)
+
+3. /upload (POST)
+   - Inputs: UploadFile (file)
+
+4. /stats (GET)
+   - Inputs: None
+
+5. /admin/hidden (GET)
+   - Inputs: None
+
+6. /results (POST)
+   - Inputs: FuzzResult model
+   - Fields: endpoint (str), method (str), status (int), verdict (str), notes (str), request (dict), response (dict), latency_ms (float)
+
+7. /results/latest (GET)
+   - Inputs: None
+
+8. /healthz (GET)
+   - Inputs: None
