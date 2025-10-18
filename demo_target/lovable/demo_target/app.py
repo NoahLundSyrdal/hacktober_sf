@@ -53,11 +53,9 @@ class FuzzResult(BaseModel):
 async def create_note(note: NoteCreate):
     global NOTE_ID_COUNTER
     
-    # Intentional bug: unhandled ValueError for long titles
     if len(note.title) > 60:
         raise ValueError("Title too long!")
     
-    # Validation for mood range
     if note.mood < 1 or note.mood > 10:
         raise HTTPException(status_code=400, detail="Mood must be between 1 and 10")
     
@@ -83,13 +81,11 @@ async def get_note(note_id: str):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    # Random 15% chance to add latency
     if random.random() < 0.15:
         time.sleep(2.5)
     
     content = await file.read()
     
-    # Intentional bug: 500 error for files > 1MB
     if len(content) > 1_000_000:
         raise HTTPException(status_code=500, detail="File too large!")
     
@@ -101,7 +97,6 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/stats")
 async def get_stats():
-    # Intentional bug: 500 error when no notes exist
     if len(DB) == 0:
         raise HTTPException(status_code=500, detail="No notes available for stats!")
     
