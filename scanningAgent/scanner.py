@@ -20,8 +20,9 @@ agent = ToolCallingAgent(
 # response = agent.run("Hello! Can you tell me what you are and how you're running?")
 # print(f"Agent response: {response}")
 
-
-with open("../demo_target/lovable/demo_target/app.py", "r") as file:
+appPath = "../demo_target/lovable/demo_target/app.py"
+appPath2 = "../demo_target_safe_login/app.py"
+with open(appPath2, "r") as file:
     content = file.read()
     print(content)
 

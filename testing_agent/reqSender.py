@@ -1,5 +1,3 @@
-import os
-from smolagents import OpenAIServerModel, ToolCallingAgent
 import requests
 import json
 from smolagents import tool
@@ -123,38 +121,23 @@ def send_file_upload_request(url: str, file_path: str, field_name: str = "file",
     except Exception as e:
         return f"Unexpected error: {str(e)}"
 
+@tool
+def get_amazing_dog_fact() -> str:
+    """A tool that tells you an amazing fact about dogs using a public API.
+    Args: None
+    """
+    # URL for the public API
+    url = "https://dogapi.dog/api/v2/facts"
 
-# Configure the model to use LM Studio's local API endpoint
-model = OpenAIServerModel(
-    model_id="local-model",  # This can be any name, LM Studio will use whatever model you have loaded
-    api_base="http://localhost:1234/v1",  # Default LM Studio API endpoint
-    api_key="not-needed",  # LM Studio doesn't require an API key by default
-)
-
-# Create a simple agent using the local model
-agent = ToolCallingAgent(
-    name="LocalLLMAgent",
-    model=model,
-    tools=[send_api_request],  # Empty list of tools
-    # You can also add the default toolbox with add_base_tools=True
-)
-
-# Example conversation with the agent
-# response = agent.run("Hello! Can you tell me what you are and how you're running?")
-# print(f"Agent response: {response}")
-
-
-with open("../scanningAgent/testable-interfaces.txt", "r") as file:
-    content = file.read()
-    print(content)
-
-testResponse = agent.run(f"Here is a list of testable interfaces for an app running at localhost:8000 :\n\n{content}\n\nGenerate 5 random fuzz test cases for each of these interfaces. Provide the test cases in a structured format, specifying the input values and the expected outputs for each test case. Try to intentionally generate bad inputs to test the robustness of the interfaces. Use the send_api_request tool to send an API requests to each API interface of the app with each of those test case inputs and show the results you get from the app for each test case.")
-
-print("Test Response:")
-print(testResponse)
-
-
-
-
-# with open("test-cases.txt", "w") as f:
-#   f.write(testResponse)
+    # case when there is a response from the API
+    try:
+        response = requests.get(url)
+        if response.status_code == 200: # expected, okay status code
+            # parsing response
+            cool_dog_fact = response.json()['data'][0]['attributes']['body']
+            return cool_dog_fact
+        else:
+            # in case of an unfavorable status code
+            return "A dog fact could not be fetched."
+    except requests.exceptions.RequestException as e:
+        return "A dog fact could not be fetched."
